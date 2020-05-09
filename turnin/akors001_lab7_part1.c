@@ -1,4 +1,3 @@
-
 /*	Author: armanikorsich
  *  Partner(s) Name: 
  *	Lab Section:
@@ -52,90 +51,59 @@ void TimerSet(unsigned long M) {
     _avr_timer_cntcurr = _avr_timer_M;
 }
 
-
-enum SM_States {START, SM_0, SM_1, SM_2, SM_3, SM_4, SM_5 } state;
-unsigned char val = 5;
-
-void WriteVal(int val) {
+void writeVal(unsigned char val) {
 	LCD_ClearScreen();
 	LCD_WriteData(val + '0');
 }
 
+enum SM_States {START, SM_1, SM_2, SM_3 } state;
+unsigned char count = 0x00;
+unsigned char val = 0x00;
+
 void TickFct() {
 	switch(state) {
 		case START:
-			if ((~PINA & 0x01) == 0x01)
+			if ((~PINA & 0x03) == 0x01)
 			{
-				state = START;
-			}
-			else
-			{
-				state = SM_0;
-			}
-			break;
-		case SM_0:
-			if ((~PINA & 0x01) == 0x01)
-			{
-				state = SM_4;
-				val--;
-			}
-			else
-			{
+				count = 10;
 				state = SM_1;
 			}
-			break;
-		case SM_1:
-			if ((~PINA & 0x01) == 0x01)
+			else if ((~PINA & 0x03) == 0x02)
 			{
-				state = SM_4;
-				val++;
-			}
-			else
-			{
+				count = 10;
 				state = SM_2;
 			}
-			break;
-		case SM_2:
-			if ((~PINA & 0x01) == 0x01)
-			{
-				state = SM_4;
-				val--;
-			}
-			else
+			else if ((~PINA & 0x03) == 0x03)
 			{
 				state = SM_3;
 			}
-			break;
-		case SM_3:
-			if ((~PINA & 0x01) == 0x01)
-			{
-				state = SM_4;
-				val++;
-			}
 			else
-			{	
-				state = SM_0;
-			}
-			break;
-		case SM_4:
-			if ((~PINA & 0x01) == 0x01)
-			{
-				state = SM_4;
-			}
-			else
-			{
-				state = SM_5;
-			}
-			break;
-		case SM_5:
-			if ((~PINA & 0x01) == 0x01)
 			{
 				state = START;
 			}
+			break;
+		case SM_1:
+			if ((~PINA & 0x03) == 0x01)
+			{
+				state = SM_1;
+			}
 			else
 			{
-				state = SM_5;
+				state = START;
 			}
+			break;
+		case SM_2:
+			if ((~PINA & 0x03) == 0x02)
+			{
+				state = SM_2;
+			}
+			else
+			{
+				state = START;
+			}
+			break;
+		case SM_3:
+			state = START;
 			break;
 		default:
 			state = START;
@@ -144,35 +112,45 @@ void TickFct() {
 
 	switch(state) {
 		case START:
-			PORTB = 0x01;
-			WriteVal(val);
-			break;
-		case SM_0:
-			PORTB = 0x01;
+			writeVal(val);
 			break;
 		case SM_1:
-			PORTB = 0x02;
-			break;
-		case SM_2:
-			PORTB = 0x04;
-			break;
-		case SM_3:
-			PORTB = 0x02;
-			break;
-		case SM_4:
-			if(val == 9)
+			if (count == 10)
 			{
-				LCD_DisplayString(1, "9 - Victory!!");
-			}			
+				if (val < 9)
+				{
+					val++;
+				}
+				count = 0;
+			}
 			else
 			{
-				WriteVal(val);
+				count++;
 			}
+			writeVal(val);
 			break;
-		case SM_5:
+		case SM_2:
+			if (count == 10)
+			{
+				if (val > 0)
+				{
+					val--;
+				}
+				count = 0;
+			}
+			else
+			{
+				count++;
+			}
+			writeVal(val);
+			break;
+		case SM_3:
+			val = 0x00;
+			writeVal(val);
 			break;
 		default:
-			PORTB = 0x01;
+			val = 0x00;
+			writeVal(val);
 			break;
 	}
 
@@ -181,23 +159,18 @@ void TickFct() {
 
 int main(void) {
     /* Insert DDR and PORT initializations */
-    DDRA = 0x00; PORTA = 0xFF;
-    DDRB = 0xFF; PORTB = 0x00;
-    DDRC = 0xFF; PORTC = 0x00;
-    DDRD = 0xFF; PORTD = 0x00;
-    
-    TimerSet(300);
-    TimerOn();
-    PORTB = 0x01;
-    LCD_init();
-    WriteVal(5);
-    /* Insert your solution below */
-    while (1) {
-        while (!TimerFlag);
-        TimerFlag = 0;
-	TickFct();
-    }
-    return 1;    
+	DDRA = 0x00; PORTA = 0xFF;
+	DDRC = 0xFF; PORTC = 0x00;
+	DDRD = 0xFF; PORTD = 0x00;
+	TimerSet(100);
+    	TimerOn();
+	
+	LCD_init();
+	//LCD_DisplayString(1, "Hello World");
+	while(1) {
+		while (!TimerFlag);
+        	TimerFlag = 0;
+		TickFct();
+	}
 
 }
-
